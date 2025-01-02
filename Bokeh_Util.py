@@ -131,6 +131,7 @@ def setDynamicUnitScale(fig,ins_df,ranges='both'):
         fig.y_range.js_on_change('start',cb)
         fig.y_range.js_on_change('end',cb)
     else:
+        print(ranges)
         fig.x_range.js_on_change('start',cb)
         fig.x_range.js_on_change('end',cb)
         fig.y_range.js_on_change('start',cb)
@@ -161,7 +162,9 @@ def setIntervalRange(fig,renderers,dims=['x','y'],scale_bins=[{'thresh':10000,'x
                                                               ,{'thresh':20000,'x0':-10000,'x1':10000}
                                                               ,{'thresh':100000,'x0':-50000,'x1':50000}
                                                               ]):
-    '''function to set a figure to follow particular "range bins" based on the extent of a set of renderers.
+    '''
+    NOT WORKING YET because bounds is not consistent.
+    function to set a figure to follow particular "range bins" based on the extent of a set of renderers.
     dims = ['x','y'] or ['x'] or ['y']
     scale_bins = list of dictionaries, with each dictionary holding "thresh" (i.e. if bounds is under this threshold range), set 'x0' and 'x1' as the start/end of the range.
     
@@ -187,6 +190,9 @@ def setIntervalRange(fig,renderers,dims=['x','y'],scale_bins=[{'thresh':10000,'x
                 let result = {'x0':Infinity, 'x1':-Infinity,'y0':Infinity,'y1':-Infinity}
                 for (var [k,v] of Object.entries(rend_dict)){     
                         const rect = Bokeh.index.get_one_by_id(k).bounds()                                            
+                        console.log(k)
+                        console.log(v.glyph.type)
+                        console.log(rect)
                         if (rect != null && v.visible){
                                 for (var k of ['x0','y0']){
                                     if (rect[k]<result[k]){
@@ -227,9 +233,6 @@ def setIntervalRange(fig,renderers,dims=['x','y'],scale_bins=[{'thresh':10000,'x
                                 }
                         }
                     }
-                console.log(fig.x_range)
-                console.log(fig.x_range.start)
-                console.log(fig.x_range.end)
 
                   '''
                   )
