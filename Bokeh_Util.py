@@ -4,6 +4,7 @@ from bokeh.events import RangesUpdate
 from bokeh.transform import linear_cmap
 from bokeh.palettes import Turbo256
 from bokeh.themes import Theme
+from bokeh.models import NumericInput
 from bokeh.layouts import column, row
 from bokeh.embed import components
 from bokeh.resources import Resources
@@ -238,3 +239,119 @@ def setIntervalRange(fig,renderers,dims=['x','y'],scale_bins=[{'thresh':10000,'x
                   )
     for rend in renderers:
         rend.data_source.js_on_change('data',cb)
+        
+def linkNumericInputToSlider(slider,log=False):
+    '''function to create a numeric input that will follow a slider value and vice versa.'''
+    model = NumericInput(value=slider.value,low=slider.start,high=slider.end,mode='float')
+    if log == True:
+        model.value = 10**slider.value
+        model.low = 10**slider.start
+        model.high = 10**slider.end
+        model.mode = 'float'
+        if hasattr(model,'step'):
+            model.step = slider.step
+    else: 
+        model.value = slider.value
+        model.low = slider.start
+        model.high = slider.end
+        model.mode = 'float'
+        if hasattr(model,'step'):
+            model.step = slider.step
+    ni = model
+    
+    ccb = CustomJS(args=dict(ni=ni,sl=slider,log=log)
+                    ,code='''
+                    sl.tags=[]
+                    ni.tags=[]
+                                        
+                    if (cb_obj === sl){
+                            if (log == true){
+                                 ni.value = 10**sl.value
+                                    }
+                            else {
+                                ni.value = sl.value
+                                }
+                            }
+                    else {
+                        // if ni, need to find nearest slider value
+                        if (log == true){
+                                var v = Math.log10(ni.value)
+                                }
+                        else {
+                            var v = ni.value
+                            }
+                        //value input is less than slider start
+                        if (v<=sl.start){
+                                if (log == true){
+                                     sl.value = sl.start
+                                     ni.value = 10**sl.start
+                                        }
+                                else {
+                                    sl.value = sl.start
+                                    ni.value = sl.start
+                                    }
+                                }
+                        //value is more than slider end
+                        else if (v>=sl.end){
+                                if (log == true){
+                                     sl.value = sl.end
+                                     ni.value = 10**sl.end
+                                        }
+                                else {
+                                    sl.value = sl.end
+                                    ni.value = sl.end
+                                    }
+                            }
+                        
+                        else {
+                            var i = 1
+                            do {
+                                if (v<sl.start+sl.step*i){
+                                        //value is now between current notch and previous
+                                        if (log==true){
+                                            var dl = Math.log10(ni.value)-(sl.start+sl.step*(i-1))
+                                            var dr = (sl.start+(sl.step*i))-Math.log(ni.value)
+                                            }
+                                        else {
+                                            var dl = ni.value-(sl.start+sl.step*(i-1))
+                                            var dr = (sl.start+(sl.step*i))-ni.value
+                                            }
+                                        if (dl<=dr){
+                                                var v = sl.start+sl.step*(i-1)
+                                                }
+                                        else {
+                                            var v = sl.start+sl.step*i
+                                            }
+                                        sl.value = v
+                                        if (log==true){
+                                                ni.value = 10**v
+                                                }
+                                        else {
+                                            ni.value = v
+                                            }
+                                        break
+                                        }
+                                i++
+                                } while (true)
+                            }
+                        }
+                    ''')
+    cb = CustomJS(args=dict(ccb=ccb,sl=slider,ni=ni),
+                  code='''
+
+                  if (cb_obj.tags.length>0){
+                          return
+                          }
+                  else {
+                      sl.tags = ['run_me']
+                      ni.tags = ['run_me']
+                      ccb.execute(cb_obj)
+                      sl.tags = ['run_me']
+                      ni.tags = ['run_me']
+                      }
+                  '''
+                  )
+
+    ni.js_on_change('value',cb)
+    slider.js_on_change('value',cb)
+    return ni
