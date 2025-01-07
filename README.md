@@ -34,6 +34,8 @@ Clone (or fork) this repository:
 
 `git branch nameOfNewApp` if modifying existing one `git branch improveXApp`
 
-- Create/modify in a new folder within the repository
+- Create new app in a new folder within the repository if making a new app
+- Make desired edits to existing app
+- commit and push branch to remote if desired.
   
 
