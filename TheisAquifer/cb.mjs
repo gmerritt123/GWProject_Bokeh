@@ -1,16 +1,6 @@
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7.9/+esm"
+//import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7.9/+esm"
 import cephes from 'https://cdn.jsdelivr.net/npm/cephes@2.0.0/+esm'
 await cephes.compiled
-
-// js function equivalent to np.linspace
-function makeArr(startValue, stopValue, cardinality) {
-  var arr = [];
-  var step = (stopValue - startValue) / (cardinality - 1);
-  for (var i = 0; i < cardinality; i++) {
-	arr.push(startValue + (step * i));
-  }
-  return arr;
-}
 
 function well_function(u){
     return cephes.expn(1,u)
@@ -80,7 +70,10 @@ export default function({hr_src,ddr_src,obs_src,ddt_src,sl_dict}){
     hr_src.data = {'r':rs,'dd':tgts, ir:[...rs.slice(1),0]}
     
     //build drawdown vs distance plot
-    var rs = makeArr(-rs[0],rs[0],1000)
+    //idea for x array is log-distance 0.1 to max rs both to right and left
+    var rsr = makeArr(Math.log(0.1),Math.log(rs[0]),500).map(x=>Math.exp(x))
+    var rsl = rsr.slice().reverse().map(x=>x*-1)
+    var rs = rsl.concat(rsr)
     var dd = rs.map(x=>ddr(x))
     ddr_src.data = {'x':rs,'dd':dd}
     

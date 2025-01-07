@@ -5,6 +5,8 @@ Created on Mon Nov 25 11:23:09 2024
 @author: Gaelen
 """
 import os
+os.chdir(r'C:\Repo\GWProject_Bokeh')
+import Bokeh_Util
 import sys
 
 import numpy as np
@@ -16,21 +18,10 @@ from bokeh.palettes import Turbo256
 from bokeh.themes import Theme
 from bokeh.layouts import column, row
 import pandas as pd
-# sys.path.append(r'C:\Repo\GWProject_Bokeh')
-# import Bokeh_Util as Bokeh_Util
-
-import httpimport
-url = r"https://raw.githubusercontent.com/gmerritt123/GWProject_Bokeh/refs/heads/main/Bokeh_Util.py"
-with httpimport.github_repo('gmerritt123', 'GWProject_Bokeh', ref='main'):
-  import Bokeh_Util as Bokeh_Util
-
-
-wdir = r'C:\Repo\Jupyter-Notebooks\90_Streamlit_apps\GWP_Pumping_Test_Analysis\pages' #when using in IDE locally
-# wdir = os.path.dirname(os.path.realpath(__file__)) #when deploying
 
 #style/theming loading
-thm = Theme(filename=wdir+r'\\Bokeh_Styles.yaml') #read yaml file for some styling already hooked up
-with open(wdir+'\\Bokeh_Styles.css','r') as f:
+thm = Theme(filename=r'Bokeh_Styles.yaml') #read yaml file for some styling already hooked up
+with open('Bokeh_Styles.css','r') as f:
     css = f.read()
 sl_style = InlineStyleSheet(css=css)
 
@@ -75,19 +66,11 @@ hr = pv.circle(x=0,y=0,radius='r'
                 ,source=hr_src
                 )
 
-# aw_glyph = AnnularWedge(x=0,y=0,inner_radius = 'ir', outer_radius='r'
-#                        , start_angle=0,end_angle=2*np.pi
-#                        ,fill_color=dd_cmap
-#                        ,line_alpha=0
-#                        ,fill_alpha=0.3
-#                        )
 
 aw_glyph = Annulus(x=0,y=0,inner_radius = 'ir', outer_radius='r'
                        ,fill_color=dd_cmap
                        ,line_alpha=0
                        ,fill_alpha=0.3
-                       # ,radius_dimension='max'
-                       # outer_radius_units='data'
                        )
 aw_r = pv.add_glyph(hr_src,aw_glyph)
 
@@ -131,7 +114,7 @@ ddt.xaxis[0].axis_label='Time (s)'
 ddt_src = ColumnDataSource(data={'t':[],'dd':[]})
 ddt_r = ddt.line(x='t',y='dd',source=ddt_src)
 
-cb = CustomJS.from_file(path=wdir+r'\\cb.mjs', hr_src=hr_src,ddr_src=ddr_src
+cb = CustomJS.from_file(path=r'TheisAquifer/cb.mjs', hr_src=hr_src,ddr_src=ddr_src
                         ,obs_src = pt_rel.data_source, ddt_src=ddt_src,
                         sl_dict=slider_dict)
 
@@ -207,12 +190,14 @@ lo = column([sl for sl in slider_dict.values()]+[pv,row([ddr,ddt])]
             )
 
 
-# curdoc().theme = thm #assigns theme
+#read in bokeh_util.js
+with open(r'Bokeh_Util.js','r') as jsFile:
+    bku_js = jsFile.read() 
 
 Bokeh_Util.save_html_wJSResources(bk_obj=lo
-                                  ,fname=wdir+r'\\Theis_Testing.html'
-                                  ,resources_list_dict={'sources':['http://d3js.org/d3.v6.js'],'scripts':[]}
+                                  ,fname=r'TheisAquifer\Theis.html'
+                                  ,resources_list_dict={'sources':['http://d3js.org/d3.v6.js'],'scripts':[bku_js]}
                                   ,html_title='Theis Drawdown',theme=thm
-    ,icon_url='https://aquainsight.sharepoint.com/sites/AquaInsight/_api/siteiconmanager/getsitelogo?type=%271%27&hash=637675014792340093')
+    )
 # save(lo,wdir+r'\\Theis_Testing.html',title='Theis Drawdown')
 
