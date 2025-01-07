@@ -4,9 +4,11 @@ Created on Mon Nov 25 11:23:09 2024
 
 @author: Gaelen
 """
-import os
-import sys
 
+import os
+os.chdir(r'C:\Repo\GWProject_Bokeh')
+import Bokeh_Util
+import sys
 import numpy as np
 from bokeh.plotting import figure, save, curdoc
 from bokeh.models import CustomJS, HoverTool, ColumnDataSource, Slider, CustomJSTickFormatter, InlineStyleSheet, Div, Range1d
@@ -16,25 +18,12 @@ from bokeh.layouts import column, row
 from bokeh.embed import file_html
 from bokeh.models import NumericInput
 import pandas as pd
-# sys.path.append(r'C:\Repo\GWProject_Bokeh')
-# import Bokeh_Util as Bokeh_Util
-
-import httpimport
-url = r"https://raw.githubusercontent.com/gmerritt123/GWProject_Bokeh/refs/heads/main/Bokeh_Util.py"
-with httpimport.github_repo('gmerritt123', 'GWProject_Bokeh', ref='main'):
-  import Bokeh_Util as Bokeh_Util
 
 
-import streamlit as st
-st.title('Well capture zone for a confined aquifer')
-import streamlit.components.v1 as components
 
-# wdir = r'C:\Repo\Jupyter-Notebooks\90_Streamlit_apps\GWP_Well_capture\pages' #when using in IDE locally
-wdir = os.path.dirname(os.path.realpath(__file__)) #when deploying
-# wdir = os.getcwd()+r'\\90_Streamlit_apps/GWP_Well_capture/pages'
 #style/theming loading
-thm = Theme(filename=wdir+r'/Bokeh_Styles.yaml') #read yaml file for some styling already hooked up
-with open(wdir+r'/Bokeh_Styles.css','r') as f:
+thm = Theme('Bokeh_Styles.yaml') #read yaml file for some styling already hooked up
+with open('Bokeh_Styles.css','r') as f:
     css = f.read()
 sl_style = InlineStyleSheet(css=css)
 
@@ -114,7 +103,6 @@ f.add_layout(c_lbl)
 #head/drawdown contours
 
 rb = RadioButtonGroup(labels=['Well Drawdown','Hydraulic Head'],active=0)
-
 hr_src = ColumnDataSource(data={'xs':[],'ys':[],'z':[]})
 from bokeh.palettes import Turbo256, Inferno
 from bokeh.transform import linear_cmap, log_cmap
@@ -147,7 +135,7 @@ tt_bar = ColorBar(color_mapper=pt_sc.glyph.fill_color.transform
 
 f.add_layout(tt_bar, 'below')
 
-pt_cb = CustomJS.from_file(path=wdir+r'/pt_cb.mjs'
+pt_cb = CustomJS.from_file(path=r'WellCapture/pt_cb.mjs'
                            ,sl_dict=slider_dict,pt_src=pt_rel.data_source, f = f
                            , pt_d = pt_d, ptl_src = ptl_src)
 
@@ -155,7 +143,7 @@ f.js_on_event('tap',pt_cb)
 f.toolbar.active_tap = pt_d
 
 
-cb = CustomJS.from_file(path=wdir+r'/cb.mjs'
+cb = CustomJS.from_file(path='WellCapture/cb.mjs'
                         , src=src,sl_dict=slider_dict, f= f
                         ,w_src=w_src, w_lbl=w_lbl
                         ,c_src=c_src,c_lbl=c_lbl
@@ -198,20 +186,19 @@ pv_ins_df = pd.DataFrame(data={'minRange':[0,3],'unitName':['Meters','Kilometers
 Bokeh_Util.setDynamicUnitScale(fig=f,ins_df=pv_ins_df,ranges='both')
 
            
+#read in bokeh_util.js
+with open(r'Bokeh_Util.js','r') as jsFile:
+    bku_js = jsFile.read() 
 
-# curdoc().theme = thm #assigns theme
-# save(lo,wdir+r'/BokehApp.html',title='Well Capture')
+
 Bokeh_Util.save_html_wJSResources(bk_obj=lo
-                                  ,fname=wdir+r'/BokehApp.html'
-                                  ,resources_list_dict={'sources':['http://d3js.org/d3.v6.js'],'scripts':[]}
-                                  ,html_title='Well Capture',theme=thm
-    ,icon_url='https://aquainsight.sharepoint.com/sites/AquaInsight/_api/siteiconmanager/getsitelogo?type=%271%27&hash=637675014792340093')
+                                  ,fname='WellCapture/WellCapture.html'
+                                  ,resources_list_dict={'sources':['http://d3js.org/d3.v6.js'
+                                                                   ,'https://cdn.jsdelivr.net/npm/d3-contour@4.0.2'
+                                                                   ],'scripts':[bku_js]}
+                                  ,html_title='Well Capture',theme=thm)
 
-# bk_html = file_html(models=lo,resources='cdn')
 
-with open(wdir+'/BokehApp.html') as f:
-    bk_html = f.read()
-components.html(bk_html,height=800)
 
 
 
