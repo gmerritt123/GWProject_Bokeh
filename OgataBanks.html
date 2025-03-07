@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+        <html lang="en">
+            <head>
+                <meta charset="utf-8">
+                <link rel="icon" href="https://aquainsight.sharepoint.com/sites/AquaInsight/_api/siteiconmanager/getsitelogo?type=%271%27&hash=637675014792340093">
+                <title>Ogata Banks 1D</title>
+                
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-3.4.1.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-gl-3.4.1.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-widgets-3.4.1.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-tables-3.4.1.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-mathjax-3.4.1.min.js"></script>
+    <script type="text/javascript">
+        Bokeh.set_log_level("info");
+    </script>
+
+                    <script type="text/javascript">
+        (function() {
+  const fn = function() {
+    Bokeh.safely(function() {
+      (function(root) {
+        function embed_document(root) {
+        const docs_json = '{"6a491d99-1ffb-4140-a081-e030a404e3b7":{"version":"3.4.1","title":"Bokeh Application","roots":[{"type":"object","name":"Column","id":"p1053","attributes":{"children":[{"type":"object","name":"Slider","id":"p1048","attributes":{"js_property_callbacks":{"type":"map","entries":[["change:value",[{"type":"object","name":"CustomJS","id":"p1052","attributes":{"args":{"type":"map","entries":[["src",{"type":"object","name":"ColumnDataSource","id":"p1036","attributes":{"selected":{"type":"object","name":"Selection","id":"p1037","attributes":{"indices":[],"line_indices":[]}},"selection_policy":{"type":"object","name":"UnionRenderers","id":"p1038"},"data":{"type":"map","entries":[["d",[]],["c",[]]]}}}],["tsl",{"id":"p1048"}],["vsl",{"type":"object","name":"Slider","id":"p1049","attributes":{"js_property_callbacks":{"type":"map","entries":[["change:value",[{"id":"p1052"}]]]},"title":"Groundwater Velocity (m/d)","start":0.01,"end":1,"value":0.01,"step":0.01}}],["dsl",{"type":"object","name":"Slider","id":"p1050","attributes":{"js_property_callbacks":{"type":"map","entries":[["change:value",[{"id":"p1052"}]]]},"title":"Effective Dispersivity/Diffusion (m\\u00b2/d)","start":0.5,"end":5,"value":0.05,"step":0.05}}],["rsl",{"type":"object","name":"Slider","id":"p1051","attributes":{"js_property_callbacks":{"type":"map","entries":[["change:value",[{"id":"p1052"}]]]},"title":"Retardation Factor","start":1,"end":10,"value":1,"step":0.5}}]]},"code":"\\n             // here is where the JS code gets written\\n             // we can define javascript functions here and use them to manipulate the models/arguments we passed in\\n             // math-wise for ogata banks solution we need an erfc function on the JS side             \\n             // erf approximation function taken from https://stackoverflow.com/questions/1906064/gauss-error-function-implementation-for-javascript\\n             \\n             function erf(x) {\\n                var z;\\n                const ERF_A = 0.147; \\n                var the_sign_of_x;\\n                if(0==x) {\\n                    the_sign_of_x = 0;\\n                    return 0;\\n                } else if(x&gt;0){\\n                    the_sign_of_x = 1;\\n                } else {\\n                    the_sign_of_x = -1;\\n                }\\n\\n                var one_plus_axsqrd = 1 + ERF_A * x * x;\\n                var four_ovr_pi_etc = 4/Math.PI + ERF_A * x * x;\\n                var ratio = four_ovr_pi_etc / one_plus_axsqrd;\\n                ratio *= x * -x;\\n                var expofun = Math.exp(ratio);\\n                var radical = Math.sqrt(1-expofun);\\n                z = radical * the_sign_of_x;\\n                return z;\\n            }\\n            \\n            // and erfc is just 1-erf(x):, so:\\n            function erfc(x){\\n                return 1-erf(x)\\n                }\\n                \\n            //now we have the math tools to write out the ogata banks solution function\\n            //want to return c/co given distance from source x, time t, gw velocity v, disp/diff d, and ret. factor r\\n            \\n            function ogata_banks_1d(x,t,v,d,r){\\n                const t1 = erfc((x-v*t)/(2*(d*t/r)**0.5)) //first term in equation\\n                const t2 = Math.exp((v*x)/(d/r)) //second term\\n                const t3 = erfc((x+v*t)/(2*(d*t/r)**0.5)) //first term in equation\\n                return 0.5 * (t1+t2*t3)                \\n                }\\n                \\n            //now collect the slider values and store as variables\\n            var t = tsl.value\\n            var v = vsl.value\\n            var d = dsl.value\\n            var r = rsl.value\\n            \\n            //now the evaluate the ogata banks function at 501 x locations (i.e. every metre from 0 to 500) and append to an array\\n            var d_upd = []\\n            var c_upd = []\\n            //loop from i=0 to i=500, adding 1 to i each time \\n            for (var i = 0; i&lt;501;i++){\\n                d_upd.push(i) //add i to the new distance array\\n                var c = ogata_banks_1d(i,t,v,d,r) //evaluate ogata_banks at i, and the slider values\\n                //possible for c to return NaN as t2 can quickly grow to infinity when t1 and t3 are 0\\n                if (isNaN(c)){\\n                    c = 0\\n                    }\\n                c_upd.push(c)\\n            }\\n            //use d_upd and c_upd arrays to update the ColumnDataSource src\\n            var upd_data = {&#x27;d&#x27;:d_upd,&#x27;c&#x27;:c_upd}\\n            \\n            src.data = upd_data   \\n            src.change.emit()            \\n             "}}]]]},"title":"Time (d)","start":0,"end":3650,"value":0}},{"id":"p1049"},{"id":"p1050"},{"id":"p1051"},{"type":"object","name":"Figure","id":"p1001","attributes":{"width":800,"x_range":{"type":"object","name":"Range1d","id":"p1011","attributes":{"end":500}},"y_range":{"type":"object","name":"Range1d","id":"p1012","attributes":{"start":-0.05,"end":1.05}},"x_scale":{"type":"object","name":"LinearScale","id":"p1013"},"y_scale":{"type":"object","name":"LinearScale","id":"p1014"},"title":{"type":"object","name":"Title","id":"p1004","attributes":{"text":"Ogata Banks 1D Analytical Solution"}},"renderers":[{"type":"object","name":"GlyphRenderer","id":"p1045","attributes":{"data_source":{"id":"p1036"},"view":{"type":"object","name":"CDSView","id":"p1046","attributes":{"filter":{"type":"object","name":"AllIndices","id":"p1047"}}},"glyph":{"type":"object","name":"Line","id":"p1042","attributes":{"x":{"type":"field","field":"d"},"y":{"type":"field","field":"c"},"line_color":"red","line_width":3}},"nonselection_glyph":{"type":"object","name":"Line","id":"p1043","attributes":{"x":{"type":"field","field":"d"},"y":{"type":"field","field":"c"},"line_color":"red","line_alpha":0.1,"line_width":3}},"muted_glyph":{"type":"object","name":"Line","id":"p1044","attributes":{"x":{"type":"field","field":"d"},"y":{"type":"field","field":"c"},"line_color":"red","line_alpha":0.2,"line_width":3}}}}],"toolbar":{"type":"object","name":"Toolbar","id":"p1010","attributes":{"tools":[{"type":"object","name":"PanTool","id":"p1025"},{"type":"object","name":"WheelZoomTool","id":"p1026","attributes":{"renderers":"auto"}},{"type":"object","name":"BoxZoomTool","id":"p1027","attributes":{"overlay":{"type":"object","name":"BoxAnnotation","id":"p1028","attributes":{"syncable":false,"level":"overlay","visible":false,"left":{"type":"number","value":"nan"},"right":{"type":"number","value":"nan"},"top":{"type":"number","value":"nan"},"bottom":{"type":"number","value":"nan"},"left_units":"canvas","right_units":"canvas","top_units":"canvas","bottom_units":"canvas","line_color":"black","line_alpha":1.0,"line_width":2,"line_dash":[4,4],"fill_color":"lightgrey","fill_alpha":0.5}}}},{"type":"object","name":"SaveTool","id":"p1033"},{"type":"object","name":"ResetTool","id":"p1034"},{"type":"object","name":"HelpTool","id":"p1035"}]}},"left":[{"type":"object","name":"LinearAxis","id":"p1020","attributes":{"ticker":{"type":"object","name":"BasicTicker","id":"p1021","attributes":{"mantissas":[1,2,5]}},"formatter":{"type":"object","name":"BasicTickFormatter","id":"p1022"},"axis_label":"C/Co Concentration","major_label_policy":{"type":"object","name":"AllLabels","id":"p1023"}}}],"below":[{"type":"object","name":"LinearAxis","id":"p1015","attributes":{"ticker":{"type":"object","name":"BasicTicker","id":"p1016","attributes":{"mantissas":[1,2,5]}},"formatter":{"type":"object","name":"BasicTickFormatter","id":"p1017"},"axis_label":"Distance From Source (m)","major_label_policy":{"type":"object","name":"AllLabels","id":"p1018"}}}],"center":[{"type":"object","name":"Grid","id":"p1019","attributes":{"axis":{"id":"p1015"}}},{"type":"object","name":"Grid","id":"p1024","attributes":{"dimension":1,"axis":{"id":"p1020"}}}]}}]}}]}}';
+        const render_items = [{"docid":"6a491d99-1ffb-4140-a081-e030a404e3b7","roots":{"p1053":"bb55634c-5eda-4cf6-9a45-b45c219dcded"},"root_ids":["p1053"]}];
+        root.Bokeh.embed.embed_items(docs_json, render_items);
+        }
+        if (root.Bokeh !== undefined) {
+          embed_document(root);
+        } else {
+          let attempts = 0;
+          const timer = setInterval(function(root) {
+            if (root.Bokeh !== undefined) {
+              clearInterval(timer);
+              embed_document(root);
+            } else {
+              attempts++;
+              if (attempts > 100) {
+                clearInterval(timer);
+                console.log("Bokeh: ERROR: Unable to run BokehJS code because BokehJS library is missing");
+              }
+            }
+          }, 10, root)
+        }
+      })(window);
+    });
+  };
+  if (document.readyState != "loading") fn();
+  else document.addEventListener("DOMContentLoaded", fn);
+})();
+    </script>
+
+            </head>
+            <body>
+                <div>
+                <div id="bb55634c-5eda-4cf6-9a45-b45c219dcded" data-root-id="p1053" style="display: contents;"></div>
+                </div>
+            </body>
+        </html>
+        
