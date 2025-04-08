@@ -10,6 +10,9 @@ from bokeh.embed import components
 from bokeh.resources import Resources
 from jinja2 import Template
 import pandas as pd
+import os
+import inspect
+import glob
 
 def save_html_wJSResources(bk_obj,fname,resources_list_dict,html_title='Bokeh Plot',theme=None
     ,icon_url='https://aquainsight.sharepoint.com/sites/AquaInsight/_api/siteiconmanager/getsitelogo?type=%271%27&hash=637675014792340093'):
@@ -355,3 +358,23 @@ def linkNumericInputToSlider(slider,log=False):
     ni.js_on_change('value',cb)
     slider.js_on_change('value',cb)
     return ni
+    
+def getTheme(theme_name):
+    '''function to retrieve a dictionary containing for a theme in the Themes folder.
+    Uses InlineStyleSheets for the css components that need to be assigned to each item
+    '''
+    from bokeh.models import InlineStyleSheet
+    #find path of Bokeh_Util lib
+    p = os.path.abspath(inspect.getfile(getTheme)).split(r'Bokeh_Util.py')[0]
+    theme_dict = {}
+    #get the yaml
+    for f in glob.glob(p+r'Themes\\'+theme_name+r'\\*.yaml'):
+        
+        theme_dict['yaml']=Theme(filename=f)
+    #get css text
+    for f in glob.glob(p+r'Themes\\'+theme_name+r'\\*.css'):
+        print(f)
+        t = f.split(p+r'Themes\\'+theme_name)[-1][1:].split('.css')[0]
+        with open(f,'r') as r:
+            theme_dict[t] = InlineStyleSheet(css=r.read())
+    return theme_dict

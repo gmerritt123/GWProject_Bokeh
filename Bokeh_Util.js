@@ -72,3 +72,38 @@ function contours_to_cds(d3_contour){
      				   }
     return {'z':cv,'xs':cxs,'ys':cys}
     }
+//numpy.clip equiv to bound a number
+function clamp(num, lower, upper) {
+		  return Math.min(Math.max(num, lower), upper);
+	  }
+
+//piecewise 1D interp
+//given xx and yy  arrays, and xx is ascending, finds where xnew fits in xx, and interpolates a y
+function interp(xnew,xx,yy){
+   var fb = getFirstBetween(xnew,xx)
+   if (fb['il']==undefined){
+		   return yy[0]
+		   }
+   else if (fb['ir'] == undefined){
+	   return yy[yy.length-1]
+	   }
+   else {
+	   var p = (xnew-fb['xl'])/(fb['xr']-fb['xl'])
+	   var r = d3.interpolateNumber(yy[fb['il']],yy[fb['ir']])(p)
+	   return r
+	   }
+   }
+   
+// array xx is ascending --> returns the first occurence of x being in between two values in xx
+// returns {'il':left side index, 'ir',right side index, 'xl': value on left, 'xr',value on right}
+function getFirstBetween(x,xx){
+  if (x<xx[0]){
+    return {'il':undefined,'ir':0,'xl':undefined,'xr':xx[0]}
+    }
+  for (var i = 0; i < xx.length-1; i++){
+    if (x >= xx[i] && x<xx[i+1]){
+      return {'il':i, 'ir':i+1, 'xl':xx[i],'xr':xx[i+1]}
+      }  
+    }
+  return {'il':xx.length-1, 'ir':undefined,'xl':xx[xx.length-1],'xr':undefined}
+  }
