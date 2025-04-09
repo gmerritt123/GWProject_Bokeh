@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+        <html lang="en">
+            <head>
+                <meta charset="utf-8">
+                <link rel="icon" href="https://aquainsight.sharepoint.com/sites/AquaInsight/_api/siteiconmanager/getsitelogo?type=%271%27&hash=637675014792340093">
+                <title>Equivalent K</title>
+                
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-3.7.0.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-gl-3.7.0.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-widgets-3.7.0.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-tables-3.7.0.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-mathjax-3.7.0.min.js"></script>
+    <script type="text/javascript">
+        Bokeh.set_log_level("info");
+    </script>
+
+<script type='text/javascript' src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.0/d3.min.js"></script>
+<script type='text/javascript'> // js function equivalent to np.linspace
+function makeArr(startValue, stopValue, cardinality) {
+  var arr = [];
+  var step = (stopValue - startValue) / (cardinality - 1);
+  for (var i = 0; i < cardinality; i++) {
+	arr.push(startValue + (step * i));
+  }
+  return arr;
+}
+
+//given bnds {xmin: , xmax: , ymin: , ymax: }, Xdim = number of columns, Ydim number of rows
+// returns an array of coordinate objects in a grid  
+function genGridPts(bnds,Xdim,Ydim){
+  var xa = makeArr(bnds.xmin,bnds.xmax,Xdim)
+  var ya = makeArr(bnds.ymin,bnds.ymax,Ydim)
+  var cx = d3.cross(ya,xa).map(v=>{return {'x':v[1],'y':v[0]}})
+  return cx
+    }
+//builds an array of n points, from bnds [min,max] centered on value ptX (ptX is between min and max)
+function arrayCenteredOnPt(bnds,n,ptX){
+    var step = (bnds[1] - bnds[0] )/ (n - 1);
+       //step forward
+       var f = []
+       var i = 0
+       do {
+       	var xn = ptX+i*step
+        f.push(xn)
+        i++
+       	} while (xn<bnds[1])
+       //step backward
+       var b = []
+       var i = 1
+       do {
+       	var xn = ptX+i*-step
+        b.push(xn)
+        i++
+       	} while (xn>bnds[0])
+    b.reverse()
+    return b.concat(f)
+    	}
+		
+//transforms columndatasource data to array of objects
+function cds_to_objarray(cds_data){
+  var keys = Object.keys(cds_data)
+  var z = d3.transpose(Object.values(cds_data))
+  var o = z.map(x=>Object.assign(...keys.map((k, i) => ({[k]: x[i]}))))
+  return o}
+  
+//transforms array of objects to columndatasource "dictionary"/object 
+function objarray_to_cds(objarray){
+  var a = d3.transpose(objarray.map(x=>Object.values(x)))
+  if (a.length>0){
+    var d = Object.assign(...Object.keys(objarray[0]).map((k, i) => ({[k]: a[i]})))
+    }
+  return d
+  }
+  
+//translates a d3 contour result into multiline-ready CDS data
+function contours_to_cds(d3_contour){
+    var cxs = []
+    var cys = []
+    var cv = []
+    for (var vi=0;vi<d3_contour.length;vi++){                       
+     		   for (var pi=0; pi<d3_contour[vi].coordinates.length;pi++){
+     			  for (var ppi = 0; ppi<d3_contour[vi].coordinates[pi].length;ppi++){                                  
+     					  var xy = d3.transpose(d3_contour[vi].coordinates[pi][ppi])
+     					  cxs.push(xy[0])
+     					  cys.push(xy[1])
+     					  cv.push(d3_contour[vi].value)
+     					  }
+     					  }
+     				   }
+    return {'z':cv,'xs':cxs,'ys':cys}
+    }
+//numpy.clip equiv to bound a number
+function clamp(num, lower, upper) {
+		  return Math.min(Math.max(num, lower), upper);
+	  }
+
+//piecewise 1D interp
+//given xx and yy  arrays, and xx is ascending, finds where xnew fits in xx, and interpolates a y
+function interp(xnew,xx,yy){
+   var fb = getFirstBetween(xnew,xx)
+   if (fb['il']==undefined){
+		   return yy[0]
+		   }
+   else if (fb['ir'] == undefined){
+	   return yy[yy.length-1]
+	   }
+   else {
+	   var p = (xnew-fb['xl'])/(fb['xr']-fb['xl'])
+	   var r = d3.interpolateNumber(yy[fb['il']],yy[fb['ir']])(p)
+	   return r
+	   }
+   }
+   
+// array xx is ascending --> returns the first occurence of x being in between two values in xx
+// returns {'il':left side index, 'ir',right side index, 'xl': value on left, 'xr',value on right}
+function getFirstBetween(x,xx){
+  if (x<xx[0]){
+    return {'il':undefined,'ir':0,'xl':undefined,'xr':xx[0]}
+    }
+  for (var i = 0; i < xx.length-1; i++){
+    if (x >= xx[i] && x<xx[i+1]){
+      return {'il':i, 'ir':i+1, 'xl':xx[i],'xr':xx[i+1]}
+      }  
+    }
+  return {'il':xx.length-1, 'ir':undefined,'xl':xx[xx.length-1],'xr':undefined}
+  }</script>
+                    <script type="text/javascript">
+        (function() {
+  const fn = function() {
+    Bokeh.safely(function() {
+      (function(root) {
+        function embed_document(root) {
+        const docs_json = '{"9c82facd-d836-4efd-acf4-502a339526c6":{"version":"3.7.0","title":"Bokeh Application","roots":[{"type":"object","name":"Column","id":"p1234","attributes":{"children":[{"type":"object","name":"Div","id":"p1229","attributes":{"stylesheets":[{"type":"object","name":"InlineStyleSheet","id":"p1157","attributes":{"css":"div.bk-clearfix{\\n            font-size: 14pt;\\n            font-family: Arial;\\n            color: #17648D;\\n            text-align: center;\\n            font-weight: bold;\\n            }"}}],"text":"Equivalent Hydraulic Conductivity in a Layered System"}},{"type":"object","name":"Div","id":"p1230","attributes":{"text":"Calculate the equivalent hydraulic conductivity both parallel and perpendicular to an n-layered system.\\n          &lt;br /&gt;&lt;br /&gt; Enter the number of layers (and hit enter) to get started.\\n          &lt;br /&gt;&lt;br /&gt;For more background, see &lt;a href=\\"https://books.gw-project.org/hydrogeologic-properties-of-earth-materials-and-principles-of-groundwater-flow/chapter/equation-derivation-for-equivalent-k-and-a-4-layer-application/\\"&gt;Hydrogeologic Properties of Earth Materials and Principles of Groundwater Flow (Woessner &amp; Poeter 2020) &lt;/a&gt;\\n          &lt;br /&gt;"}},{"type":"object","name":"Row","id":"p1233","attributes":{"children":[{"type":"object","name":"Column","id":"p1232","attributes":{"children":[{"type":"object","name":"NumericInput","id":"p1160","attributes":{"js_property_callbacks":{"type":"map","entries":[["change:value",[{"type":"object","name":"CustomJS","id":"p1217","attributes":{"args":{"type":"map","entries":[["src",{"type":"object","name":"ColumnDataSource","id":"p1161","attributes":{"selected":{"type":"object","name":"Selection","id":"p1162","attributes":{"indices":[],"line_indices":[]}},"selection_policy":{"type":"object","name":"UnionRenderers","id":"p1163"},"data":{"type":"map","entries":[["mat",[]],["x",[]],["w",[]],["k",[]]]}}}],["ni",{"id":"p1160"}],["mlc",{"type":"object","name":"Column","id":"p1215"}],["mkc",{"type":"object","name":"Column","id":"p1216"}],["ft",{"type":"object","name":"CustomJSTickFormatter","id":"p1214","attributes":{"code":"return &#x27;Material x K (m/s): &#x27;+ (10**tick).toExponential(2).toString()"}}],["perpow",{"type":"object","name":"Arrow","id":"p1165","attributes":{"visible":false,"source":{"type":"object","name":"ColumnDataSource","id":"p1167","attributes":{"selected":{"type":"object","name":"Selection","id":"p1168","attributes":{"indices":[],"line_indices":[]}},"selection_policy":{"type":"object","name":"UnionRenderers","id":"p1169"},"data":{"type":"map"}}},"x_start":{"type":"value","value":-1},"y_start":{"type":"value","value":0},"x_end":{"type":"value","value":-1},"y_end":{"type":"value","value":0},"end":{"type":"object","name":"NormalHead","id":"p1164"}}}],["perp_lbl",{"type":"object","name":"Label","id":"p1170","attributes":{"visible":false,"text":"$$K_perp$$","x":-1,"y":0,"x_offset":-0.1,"y_offset":-20,"angle":1.5707963267948966}}],["parrow",{"type":"object","name":"Arrow","id":"p1172","attributes":{"visible":false,"source":{"type":"object","name":"ColumnDataSource","id":"p1174","attributes":{"selected":{"type":"object","name":"Selection","id":"p1175","attributes":{"indices":[],"line_indices":[]}},"selection_policy":{"type":"object","name":"UnionRenderers","id":"p1176"},"data":{"type":"map"}}},"x_start":{"type":"value","value":-1},"y_start":{"type":"value","value":-0.25},"x_end":{"type":"value","value":1},"y_end":{"type":"value","value":-0.25},"end":{"type":"object","name":"NormalHead","id":"p1171"}}}],["par_lbl",{"type":"object","name":"Label","id":"p1177","attributes":{"visible":false,"x":-0.9,"y":-0.65}}],["yr",{"type":"object","name":"Range1d","id":"p1188","attributes":{"start":-1,"end":4}}]]},"code":"\\n                 \\n                 var new_mlc = []\\n                 var new_mkc = []\\n                 var xc = 0\\n                 var upd_src = []\\n                 for (var i =0; i&lt; ni.value; i++){\\n                         var mat = (i+1).toString()\\n                         //if more than current number of materials, need to make new widgets\\n                         if (i+1 &gt; mlc.children.length){\\n                             new_mlc.push(new Bokeh.Widgets.NumericInput({width:150,value:1,low:0,title:&#x27;Layer &#x27;+mat+&#x27; Thickness (m)&#x27;,mode:&#x27;float&#x27;}))\\n                             new_mlc[i].js_property_callbacks = ni.js_property_callbacks //assigns this callback to trigger on change of new widget\\n                             //clone the log tick formatter and splice in the Mat number\\n                             var nft = ft.clone()\\n                             var pre = nft.code.slice(0,17)\\n                             var suf = nft.code.slice(18,nft.code.length)\\n                             nft.code = pre+mat+suf                    \\n                             new_mkc.push(new Bokeh.Widgets.Slider({start:-12,end:0,step:0.1,value:-4,format:nft,height:50})) \\n                             new_mkc[i].js_property_callbacks = ni.js_property_callbacks\\n                             }\\n                         else {\\n                             new_mlc.push(mlc.children[i])\\n                             new_mkc.push(mkc.children[i])\\n                             }\\n                         var r = {&#x27;w&#x27;:new_mlc[i].value,&#x27;x&#x27;:xc+new_mlc[i].value/2,&#x27;k&#x27;:10**new_mkc[i].value,&#x27;mat&#x27;:i+1}\\n                         xc = xc+new_mlc[i].value\\n                         upd_src.push(r)\\n                         }\\n                 mlc.children = new_mlc\\n                 mkc.children = new_mkc\\n                 var am = d3.sum(upd_src,d=&gt;d.w*d.k)/d3.sum(upd_src,d=&gt;d.w)\\n                 var hm = d3.sum(upd_src,d=&gt;d.w)/d3.sum(upd_src,d=&gt;d.w/d.k)\\n                 //update stuff\\n                 yr.end = xc*1.1\\n                 yr.start = 0-xc*0.15\\n                 perpow.y_end=xc\\n                 var perp_pre = &#x27;$$Equiv. K_{perpendicular} = &#x27;\\n                 var perp_v = hm.toExponential(2).toString()+&#x27;$$&#x27;\\n                 perp_lbl.text = perp_pre+perp_v                 \\n                 perp_lbl.y = xc/3                 \\n                 par_lbl.text = &#x27;$$Equiv. K_{parallel} = &#x27;+ am.toExponential(2).toString()+&#x27;$$&#x27;\\n                 par_lbl.y = yr.start\\n                 parrow.y_start = 0-xc*0.05\\n                 parrow.y_end = 0-xc*(0.05)\\n                 src.data = objarray_to_cds(upd_src)\\n                 perpow.visible = true\\n                 parrow.visible=true\\n                 perp_lbl.visible=true\\n                 par_lbl.visible=true\\n                 "}}]]]},"title":"Number of Materials","low":1}},{"type":"object","name":"Row","id":"p1231","attributes":{"children":[{"id":"p1215"},{"id":"p1216"}]}}]}},{"type":"object","name":"Figure","id":"p1178","attributes":{"width":400,"height":800,"x_range":{"type":"object","name":"Range1d","id":"p1187","attributes":{"start":-1.5,"end":1.5}},"y_range":{"id":"p1188"},"x_scale":{"type":"object","name":"LinearScale","id":"p1189"},"y_scale":{"type":"object","name":"LinearScale","id":"p1190"},"title":{"type":"object","name":"Title","id":"p1185","attributes":{"text_color":"#17648D","text_font":"arial","text_font_size":"16pt"}},"renderers":[{"type":"object","name":"GlyphRenderer","id":"p1225","attributes":{"data_source":{"id":"p1161"},"view":{"type":"object","name":"CDSView","id":"p1226","attributes":{"filter":{"type":"object","name":"AllIndices","id":"p1227"}}},"glyph":{"type":"object","name":"Rect","id":"p1222","attributes":{"x":{"type":"value","value":0},"y":{"type":"field","field":"x"},"width":{"type":"value","value":1},"height":{"type":"field","field":"w"},"fill_color":{"type":"field","field":"k","transform":{"type":"object","name":"LogColorMapper","id":"p1218","attributes":{"palette":["#30123b","#311542","#32184a","#341b51","#351e58","#36215f","#372365","#38266c","#392972","#3a2c79","#3b2f7f","#3c3285","#3c358b","#3d3791","#3e3a96","#3f3d9c","#4040a1","#4043a6","#4145ab","#4148b0","#424bb5","#434eba","#4350be","#4353c2","#4456c7","#4458cb","#455bce","#455ed2","#4560d6","#4563d9","#4666dd","#4668e0","#466be3","#466de6","#4670e8","#4673eb","#4675ed","#4678f0","#467af2","#467df4","#467ff6","#4682f8","#4584f9","#4587fb","#4589fc","#448cfd","#438efd","#4291fe","#4193fe","#4096fe","#3f98fe","#3e9bfe","#3c9dfd","#3ba0fc","#39a2fc","#38a5fb","#36a8f9","#34aaf8","#33acf6","#31aff5","#2fb1f3","#2db4f1","#2bb6ef","#2ab9ed","#28bbeb","#26bde9","#25c0e6","#23c2e4","#21c4e1","#20c6df","#1ec9dc","#1dcbda","#1ccdd7","#1bcfd4","#1ad1d2","#19d3cf","#18d5cc","#18d7ca","#17d9c7","#17dac4","#17dcc2","#17debf","#18e0bd","#18e1ba","#19e3b8","#1ae4b6","#1be5b4","#1de7b1","#1ee8af","#20e9ac","#22eba9","#24eca6","#27eda3","#29eea0","#2cef9d","#2ff09a","#32f197","#35f394","#38f491","#3bf48d","#3ff58a","#42f687","#46f783","#4af880","#4df97c","#51f979","#55fa76","#59fb72","#5dfb6f","#61fc6c","#65fc68","#69fd65","#6dfd62","#71fd5f","#74fe5c","#78fe59","#7cfe56","#80fe53","#84fe50","#87fe4d","#8bfe4b","#8efe48","#92fe46","#95fe44","#98fe42","#9bfd40","#9efd3e","#a1fc3d","#a4fc3b","#a6fb3a","#a9fb39","#acfa37","#aef937","#b1f836","#b3f835","#b6f735","#b9f534","#bbf434","#bef334","#c0f233","#c3f133","#c5ef33","#c8ee33","#caed33","#cdeb34","#cfea34","#d1e834","#d4e735","#d6e535","#d8e335","#dae236","#dde036","#dfde36","#e1dc37","#e3da37","#e5d838","#e7d738","#e8d538","#ead339","#ecd139","#edcf39","#efcd39","#f0cb3a","#f2c83a","#f3c63a","#f4c43a","#f6c23a","#f7c039","#f8be39","#f9bc39","#f9ba38","#fab737","#fbb537","#fbb336","#fcb035","#fcae34","#fdab33","#fda932","#fda631","#fda330","#fea12f","#fe9e2e","#fe9b2d","#fe982c","#fd952b","#fd9229","#fd8f28","#fd8c27","#fc8926","#fc8624","#fb8323","#fb8022","#fa7d20","#fa7a1f","#f9771e","#f8741c","#f7711b","#f76e1a","#f66b18","#f56817","#f46516","#f36315","#f26014","#f15d13","#ef5a11","#ee5810","#ed550f","#ec520e","#ea500d","#e94d0d","#e84b0c","#e6490b","#e5460a","#e3440a","#e24209","#e04008","#de3e08","#dd3c07","#db3a07","#d93806","#d73606","#d63405","#d43205","#d23005","#d02f04","#ce2d04","#cb2b03","#c92903","#c72803","#c52602","#c32402","#c02302","#be2102","#bb1f01","#b91e01","#b61c01","#b41b01","#b11901","#ae1801","#ac1601","#a91501","#a61401","#a31201","#a01101","#9d1001","#9a0e01","#970d01","#940c01","#910b01","#8e0a01","#8b0901","#870801","#840701","#810602","#7d0502","#7a0402"],"low":1e-12,"high":1}}}}},"nonselection_glyph":{"type":"object","name":"Rect","id":"p1223","attributes":{"x":{"type":"value","value":0},"y":{"type":"field","field":"x"},"width":{"type":"value","value":1},"height":{"type":"field","field":"w"},"line_alpha":{"type":"value","value":0.1},"fill_color":{"type":"field","field":"k","transform":{"id":"p1218"}},"fill_alpha":{"type":"value","value":0.1},"hatch_alpha":{"type":"value","value":0.1}}},"muted_glyph":{"type":"object","name":"Rect","id":"p1224","attributes":{"x":{"type":"value","value":0},"y":{"type":"field","field":"x"},"width":{"type":"value","value":1},"height":{"type":"field","field":"w"},"line_alpha":{"type":"value","value":0.2},"fill_color":{"type":"field","field":"k","transform":{"id":"p1218"}},"fill_alpha":{"type":"value","value":0.2},"hatch_alpha":{"type":"value","value":0.2}}}}}],"toolbar":{"type":"object","name":"Toolbar","id":"p1186","attributes":{"tools":[{"type":"object","name":"PanTool","id":"p1201"},{"type":"object","name":"WheelZoomTool","id":"p1202","attributes":{"renderers":"auto"}},{"type":"object","name":"BoxZoomTool","id":"p1203","attributes":{"dimensions":"both","overlay":{"type":"object","name":"BoxAnnotation","id":"p1204","attributes":{"syncable":false,"line_color":"black","line_alpha":1.0,"line_width":2,"line_dash":[4,4],"fill_color":"lightgrey","fill_alpha":0.5,"level":"overlay","visible":false,"left":{"type":"number","value":"nan"},"right":{"type":"number","value":"nan"},"top":{"type":"number","value":"nan"},"bottom":{"type":"number","value":"nan"},"left_units":"canvas","right_units":"canvas","top_units":"canvas","bottom_units":"canvas","handles":{"type":"object","name":"BoxInteractionHandles","id":"p1210","attributes":{"all":{"type":"object","name":"AreaVisuals","id":"p1209","attributes":{"fill_color":"white","hover_fill_color":"lightgray"}}}}}}}},{"type":"object","name":"SaveTool","id":"p1211"},{"type":"object","name":"ResetTool","id":"p1212"},{"type":"object","name":"HelpTool","id":"p1213"},{"type":"object","name":"HoverTool","id":"p1228","attributes":{"renderers":[{"id":"p1225"}],"tooltips":[["Layer","@mat"],["K (m/s)","@k"],["Thickness (m)","@w"]],"attachment":"right"}}]}},"left":[{"type":"object","name":"LinearAxis","id":"p1196","attributes":{"ticker":{"type":"object","name":"BasicTicker","id":"p1197","attributes":{"mantissas":[1,2,5]}},"formatter":{"type":"object","name":"BasicTickFormatter","id":"p1198"},"axis_label":"Thickness (m)","axis_label_text_color":"#17648D","axis_label_text_font":"arial","axis_label_text_font_size":"14pt","axis_label_text_font_style":"bold","major_label_policy":{"type":"object","name":"AllLabels","id":"p1199"},"major_label_text_font":"arial","major_label_text_font_size":"12pt","major_label_text_font_style":"normal"}}],"below":[{"type":"object","name":"LinearAxis","id":"p1191","attributes":{"visible":false,"ticker":{"type":"object","name":"BasicTicker","id":"p1192","attributes":{"mantissas":[1,2,5]}},"formatter":{"type":"object","name":"BasicTickFormatter","id":"p1193"},"axis_label_text_color":"#17648D","axis_label_text_font":"arial","axis_label_text_font_size":"14pt","axis_label_text_font_style":"bold","major_label_policy":{"type":"object","name":"AllLabels","id":"p1194"},"major_label_text_font":"arial","major_label_text_font_size":"12pt","major_label_text_font_style":"normal"}}],"center":[{"type":"object","name":"Grid","id":"p1195","attributes":{"axis":{"id":"p1191"}}},{"type":"object","name":"Grid","id":"p1200","attributes":{"dimension":1,"axis":{"id":"p1196"}}},{"id":"p1165"},{"id":"p1170"},{"id":"p1172"},{"id":"p1177"}]}}]}}]}}]}}';
+        const render_items = [{"docid":"9c82facd-d836-4efd-acf4-502a339526c6","roots":{"p1234":"d985df42-4c96-44ba-8e55-069ddf9e0034"},"root_ids":["p1234"]}];
+        root.Bokeh.embed.embed_items(docs_json, render_items);
+        }
+        if (root.Bokeh !== undefined) {
+          embed_document(root);
+        } else {
+          let attempts = 0;
+          const timer = setInterval(function(root) {
+            if (root.Bokeh !== undefined) {
+              clearInterval(timer);
+              embed_document(root);
+            } else {
+              attempts++;
+              if (attempts > 100) {
+                clearInterval(timer);
+                console.log("Bokeh: ERROR: Unable to run BokehJS code because BokehJS library is missing");
+              }
+            }
+          }, 10, root)
+        }
+      })(window);
+    });
+  };
+  if (document.readyState != "loading") fn();
+  else document.addEventListener("DOMContentLoaded", fn);
+})();
+    </script>
+
+            </head>
+            <body>
+                <div>
+                <div id="d985df42-4c96-44ba-8e55-069ddf9e0034" data-root-id="p1234" style="display: contents;"></div>
+                </div>
+            </body>
+        </html>
+        
