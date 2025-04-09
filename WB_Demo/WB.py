@@ -62,10 +62,10 @@ stg_src = ColumnDataSource(stg_df)
 
 title_div = Div(text='Reservoir Water Balance',stylesheets=[Bokeh_Util.getTheme('Aqua_Base')['DivTitle']])
 
-# with open(r'DescDiv.txt') as f:
-#     desc_str = f.read()
+with open(r'DescDiv.txt') as f:
+    desc_str = f.read()
 
-# desc_div = Div(text=desc_str)
+desc_div = Div(text=desc_str)
 
 #main Water Balance Figure Diagram
 fig = figure(height=500,width=1300,x_axis_type='datetime'
@@ -179,7 +179,7 @@ with open(r'C:\Repo\GWProject_Bokeh\Bokeh_Util.js') as f:
 
 #build layout and write html
 Bokeh_Util.save_html_wJSResources(bk_obj=column([title_div,
-                                                 # desc_div,
+                                                  desc_div,
                                                  # row([bd,dsl]),
                                                  row([bsl,bhelp]),row([ksl,khelp]),fig,d3_divTitle,d3_div])
                                   , fname='WB.html'
